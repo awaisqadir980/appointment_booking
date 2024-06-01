@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 # Hospital and Doctor Information
 HOSPITAL_NAME = "Qadir Hospital"
@@ -26,12 +29,13 @@ def load_appointments():
         return pd.read_csv(APPOINTMENTS_FILE)
     except FileNotFoundError:
         return pd.DataFrame(columns=["Date / تاریخ", "Time / ٹائم", "Name / مریض کا نام", "Age / مریض کی عمر", 
-                                     "Gender / مریض کی جنس", "History / بیماری کے بارے میں تھوڑا بیان کریں"])
+                                     "Gender / مریض کی جنس", "History / بیماری کے بارے میں تھوڑا بیان کریں", 
+                                     "Contact Number / رابطہ نمبر"])
 
 appointments_df = load_appointments()
 
 # Save appointments to CSV
-def save_appointment(date, time, name, age, gender, history):
+def save_appointment(date, time, name, age, gender, history, contact_number):
     global appointments_df
     new_appointment = pd.DataFrame({
         "Date / تاریخ": [date],
@@ -46,7 +50,7 @@ def save_appointment(date, time, name, age, gender, history):
     appointments_df.to_csv(APPOINTMENTS_FILE, index=False)
 
 # Send email notification
-def send_email_notification(date, time, name, age, gender, history):
+def send_email_notification(date, time, name, age, gender, history, contact_number):
     msg = MIMEMultipart()
     msg['From'] = HOSPITAL_EMAIL
     msg['To'] = ADMIN_EMAIL
@@ -82,7 +86,6 @@ st.title("Appointment Booking")
 st.title(HOSPITAL_NAME)
 st.subheader(DOCTOR_NAME)
 
-
 st.info(f"Email: {HOSPITAL_EMAIL}\nPhone: {HOSPITAL_PHONE}\nWebsite: {HOSPITAL_WEBSITE}")
 
 # Collect patient information
@@ -98,12 +101,12 @@ selected_date = st.date_input("Select a date for the appointment / تاریخ ک
 
 # Generate and display available time slots
 available_slots = generate_time_slots()
-selected_slot = st.selectbox("Select an available time slot / وقت کا انتخاب کریں", [slot for slot in available_slots if f"{selected_date} {slot}" not in appointments_df['Time'].values])
+selected_slot = st.selectbox("Select an available time slot / وقت کا انتخاب کریں", [slot for slot in available_slots if f"{selected_date} {slot}" not in appointments_df['Time / ٹائم'].values])
 
 if st.button("Book Appointment"):
     if patient_name and patient_age and patient_gender:
-        save_appointment(selected_date, selected_slot, patient_name, patient_age, patient_gender, patient_history)
-        send_email_notification(selected_date, selected_slot, patient_name, patient_age, patient_gender, patient_history)
+        save_appointment(selected_date, selected_slot, patient_name, patient_age, patient_gender, patient_history, patient_contact)
+        send_email_notification(selected_date, selected_slot, patient_name, patient_age, patient_gender, patient_history, patient_contact)
         st.success(f"Appointment booked successfully for {selected_date} at {selected_slot}")
     else:
         st.error("Please fill in all the details.")
@@ -112,5 +115,5 @@ if st.button("Book Appointment"):
 if st.checkbox("Show booked appointments"):
     st.write(appointments_df)
 
-# add footer
+# Add footer
 st.markdown("The system developed by Qadir Materials Tech, for more services contact us: awais.qadir980@gmail.com")
